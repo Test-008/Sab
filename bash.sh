@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# This script replicates the actions of the Dockerfile in a bash script format
-
 # Set environment variables
 export LANG=en_US.UTF-8
 export LANGUAGE=en_US:en
@@ -39,7 +37,19 @@ echo "jenkins:Initial1" | chpasswd
 
 # Import certificates
 cd /usr/lib/jvm/java-11-openjdk-amd64/lib/security
-# Assuming the URLs and the openssl commands are correct, replicate the steps here
+
+# Add the openssl & keytool commands & update ca certificate, 
+curl -sSL -f -k http://aia.pki.co.sap.com/aia/SAPNetCA_G2.crt -o ca.crt &&\
+curl -sSL -f -k http://aia.pki.co.sap.com/aia/SAP%20Global%20Root%20CA.crt -o root.crt &&\
+openssl s_client -connect github.wdf.sap.corp:443 -showcerts </dev/null 2>/dev/null|openssl x509 -outform PEM >git.pem &&\
+openssl s_client -connect jenkins.gtlc.only.sap:443 -showcerts </dev/null 2>/dev/null|openssl x509 -outform PEM >gtlc.pem &&\
+keytool -import -noprompt -alias ca -keystore cacerts -storepass changeit -file ca.crt &&\
+keytool -import -noprompt -alias root -keystore cacerts -storepass changeit -file root.crt &&\
+keytool -import -noprompt -alias git -keystore cacerts -storepass changeit -file git.pem && \
+keytool -import -noprompt -alias gtlc -keystore cacerts -storepass changeit -file gtlc.pem && \
+mv ca.crt /usr/local/share/ca-certificates/ca.crt &&\
+mv root.crt /usr/local/share/ca-certificates/root.crt &&\
+update-ca-certificates
 
 # Git configuration
 git config --global user.email "gtlc_ci@sap.com" && \
@@ -47,29 +57,34 @@ git config --global user.name "gtlc_ci" && \
 git config --global http.sslverify false
 
 # Configure sudoers for Jenkins user
-echo "jenkins ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/jenkins
+echo "jenkins ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/jenkins && \
+echo no |dpkg-reconfigure dash &&\
+chown -R jenkins.jenkins /home/jenkins/ && \
+ENV PATH="/opt/node/bin:${PATH}" 
 
 # SDKMAN and Grails installation
 su - jenkins -c 'curl -s https://get.sdkman.io | bash && \
 . "$HOME/.sdkman/bin/sdkman-init.sh" && \
 sdk install grails 2.4.4'
 
+# Install SAP Machine
+curl -LO https://github.com/SAP/SapMachine/releases/download/sapmachine-11.0.20/sapmachine-jdk-11.0.20_linux-x64_bin.tar.gz && \
+tar zxvf sapmachine-jdk-11.0.20_linux-x64_bin.tar.gz -C /usr/local/ && \
+ln -s /usr/local/sapmachine-jdk-11.0.20 /usr/local/jdk11 && \
+chown jenkins.jenkins -R /usr/local/jdk11
+
+
 # Install Git LFS
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
 apt-get install -y git-lfs && \
-git lfs install
+apt-get -q clean -y && rm -rf /var/lib/apt/lists/* && rm -f /var/cache/apt/*.bin && \
+git lfs install && \
+wget https://github.com/sapcc/kubernikus/releases/download/v1.0.0%2Bf4a0f3eff2603895b25d3f98f865a6fc7e3a26df/kubernikusctl_linux_amd64 && \ 
+mv kubernikusctl_linux_amd64 /usr/bin/kubernikusctl && \
+chmod +x /usr/bin/kubernikusctl
 
 # Install Google Chrome and Xvfb
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
 echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
 apt-get update && \
 apt-get install -y google-chrome-stable xvfb
-
-# Additional configurations and installations (Node.js, Maven, etc.)
-# Replicate the steps from the Dockerfile here
-
-# Set PATH
-export PATH="/opt/node/bin:${PATH}"
-
-# Expose port 22 for SSH (note: this line is only informative in a script)
-echo "Port 22 is
