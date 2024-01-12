@@ -88,3 +88,53 @@ wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
 echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
 apt-get update && \
 apt-get install -y google-chrome-stable xvfb
+
+
+# EXPOSE 22 is Docker specific and not needed in a bash script.
+
+# Assuming the 'ssh' directory is in the current directory.
+cp -R ssh /home/jenkins/.ssh
+
+# RUN commands
+mkdir -p /opt/config
+cd /home/jenkins/
+mkdir -p .gradle/{buildOutputCleanup,build-scan-data,caches,daemon,notifications,webdriver,workers}
+chown -R jenkins:jenkins /opt/config /home/jenkins
+chmod 600 /home/jenkins/.ssh/id_rsa
+cd /opt
+
+# Install packages
+apt-get update
+apt-get install -y --no-install-recommends xz-utils golang maven vim
+
+# Cleanup
+apt-get -q clean -y
+rm -rf /var/lib/apt/lists/* 
+rm -f /var/cache/apt/*.bin
+
+# Download and setup Node.js
+wget https://nodejs.org/dist/v14.17.3/node-v14.17.3-linux-x64.tar.xz
+tar xf /opt/node-v14.17.3-linux-x64.tar.xz
+rm -rf /opt/node-v14.17.3-linux-x64.tar.xz
+ln -s /opt/node-v14.17.3-linux-x64 /opt/node
+ln -s /opt/node/bin/node /bin/node
+ln -s /opt/node/bin/npm /bin/npm
+chmod -R 777 /opt/node-v14.17.3-linux-x64
+
+# Install global npm packages
+npm install --prefix /opt/node-v14.17.3-linux-x64 -g @angular/cli
+ln -s /opt/node/bin/ng /bin/ng
+npm install --prefix /opt/node-v14.17.3-linux-x64 -g @angular-devkit/build-angular
+npm install --prefix /opt/node-v14.17.3-linux-x64 -g typescript
+
+# Additional configurations (similar to ADD command)
+cp config /home/jenkins/.kube/config
+mkdir -p /home/jenkins/.m2
+chown -R jenkins:jenkins /home/jenkins
+cp settings.xml /home/jenkins/.m2
+
+# CMD is Docker specific and not needed in a bash script.
+# To run sshd: /usr/sbin/sshd -D
+
+# Set PATH
+export PATH="/opt/node/bin:${PATH}"
