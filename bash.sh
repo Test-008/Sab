@@ -112,20 +112,25 @@ apt-get -q clean -y
 rm -rf /var/lib/apt/lists/* 
 rm -f /var/cache/apt/*.bin
 
-# Download and setup Node.js
-wget https://nodejs.org/dist/v20.9.0/node-v20.9.0-linux-x64.tar.xz
-tar xf /opt/node-v20.9.0-linux-x64.tar.xz
-rm -rf /opt/node-v20.9.0-linux-x64.tar.xz
-ln -s /opt/node-v20.9.0-linux-x64 /opt/node
-ln -s /opt/node/bin/node /bin/node
-ln -s /opt/node/bin/npm /bin/npm
+#!/bin/bash
+
+# Download and setup Node.js version 20.9.0
+wget https://nodejs.org/dist/v20.9.0/node-v20.9.0-linux-x64.tar.xz -P /opt
+tar -xf /opt/node-v20.9.0-linux-x64.tar.xz -C /opt
+rm -f /opt/node-v20.9.0-linux-x64.tar.xz
+ln -sf /opt/node-v20.9.0-linux-x64 /opt/node
+ln -sf /opt/node/bin/node /usr/local/bin/node
+ln -sf /opt/node/bin/npm /usr/local/bin/npm
 chmod -R 777 /opt/node-v20.9.0-linux-x64
 
+# Update PATH to include the new Node.js binaries
+export PATH=$PATH:/opt/node/bin
+
 # Install global npm packages
-npm install --prefix /opt/node-v20.9.0-linux-x64 -g @angular/cli
-ln -s /opt/node/bin/ng /bin/ng
-npm install --prefix /opt/node-v20.9.0-linux-x64 -g @angular-devkit/build-angular
-npm install --prefix /opt/node-v20.9.0-linux-x64 -g typescript
+npm install -g @angular/cli
+ln -sf /opt/node/bin/ng /usr/local/bin/ng
+npm install -g @angular-devkit/build-angular
+npm install -g typescript
 
 # Additional configurations (similar to ADD command)
 cp config /home/jenkins/.kube/config
@@ -136,5 +141,3 @@ cp settings.xml /home/jenkins/.m2
 # CMD is Docker specific and not needed in a bash script.
 # To run sshd: /usr/sbin/sshd -D
 
-# Set PATH
-export PATH="/opt/node/bin:${PATH}"
