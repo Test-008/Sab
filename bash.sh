@@ -113,19 +113,19 @@ rm -rf /var/lib/apt/lists/*
 rm -f /var/cache/apt/*.bin
 
 # Download and setup Node.js
-wget https://nodejs.org/dist/v14.17.3/node-v14.17.3-linux-x64.tar.xz
-tar xf /opt/node-v14.17.3-linux-x64.tar.xz
-rm -rf /opt/node-v14.17.3-linux-x64.tar.xz
-ln -s /opt/node-v14.17.3-linux-x64 /opt/node
+wget https://nodejs.org/dist/v20.9.0/node-v20.9.0-linux-x64.tar.xz
+tar xf /opt/node-v20.9.0-linux-x64.tar.xz
+rm -rf /opt/node-v20.9.0-linux-x64.tar.xz
+ln -s /opt/node-v20.9.0-linux-x64 /opt/node
 ln -s /opt/node/bin/node /bin/node
 ln -s /opt/node/bin/npm /bin/npm
-chmod -R 777 /opt/node-v14.17.3-linux-x64
+chmod -R 777 /opt/node-v20.9.0-linux-x64
 
 # Install global npm packages
-npm install --prefix /opt/node-v14.17.3-linux-x64 -g @angular/cli
+npm install --prefix /opt/node-v20.9.0-linux-x64 -g @angular/cli
 ln -s /opt/node/bin/ng /bin/ng
-npm install --prefix /opt/node-v14.17.3-linux-x64 -g @angular-devkit/build-angular
-npm install --prefix /opt/node-v14.17.3-linux-x64 -g typescript
+npm install --prefix /opt/node-v20.9.0-linux-x64 -g @angular-devkit/build-angular
+npm install --prefix /opt/node-v20.9.0-linux-x64 -g typescript
 
 # Additional configurations (similar to ADD command)
 cp config /home/jenkins/.kube/config
