@@ -1,0 +1,46 @@
+stage('Deploy to WDF/VAN DEV') {
+    when {
+        expression { return DEPLOY_ENV.equalsIgnoreCase('dev') }
+    }
+    steps {
+        script {
+            echo '==================Deploy to VAN DEV========================'
+            def prnumber = getprnumber()
+            sh """
+                echo "the number is ${prnumber}"
+                sed -i "s/${LUCENE_SPACEHOLDER}/${LUCENE_NAME_DEV}:${prnumber}/g" ${DEV_DEPLOY_YAML}
+                sed -i "s/${SW360_COUCHDB_SPACEHOLDER}/${SW360_COUCHDB_NAME_DEV}:${prnumber}/g" ${DEV_DEPLOY_YAML}
+                sed -i "s/${SW360_SPACEHOLDER}/${SW360_NAME_DEV}:${prnumber}/g" ${DEV_DEPLOY_YAML}
+                pwd && cat ${DEV_DEPLOY_YAML} && ls -al
+            """
+
+            // Uncomment the following lines to deploy and check the services once you have confirmation from the Dev team.
+            // Below command copies the updated YAML file, commit and push the changes, and then apply the configurations in Kubernetes.
+
+            /*
+            sh """
+                cp ../${DEV_DEPLOY_YAML} dev/
+                git add .
+                git commit -m '${BRANCH_NAME}'
+                git push origin main
+                pwd
+                kubectl config use-context gardener-us
+                kubectl apply -f dev/${DEV_DEPLOY_YAML}
+            """
+            */
+
+            // Uncomment these lines to check the status of the pods, services, and ingress in the dev namespace.
+            // These kubectl commands are helpful for verifying that the new workloads are deployed and running as expected.
+
+            /*
+            sh """
+                kubectl get pods -n dev
+                kubectl get svc -n dev
+                kubectl get ing -n dev
+            """
+            */
+
+            echo '==================Check service health VAN DEV========================'
+        }
+    }
+}
