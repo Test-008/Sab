@@ -1,0 +1,46 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Check Helm Installation') {
+            steps {
+                script {
+                    // Run a shell command to check if Helm is installed
+                    def helmInstalled = sh(script: 'helm version --short', returnStatus: true)
+                    
+                    if (helmInstalled == 0) {
+                        echo "Helm is already installed"
+                    } else {
+                        echo "Helm is not installed"
+                        installHelm()
+                    }
+                }
+            }
+        }
+        
+        stage('Add Helm Repository and Install Helm Charts') {
+            steps {
+                script {
+                    // Add Helm repository
+                    sh 'helm repo add stakater https://stakater.github.io/stakater-charts'
+                    
+                    // Update Helm repositories
+                    sh 'helm repo update'
+                    
+                    // Deploy reloader
+                    sh 'helm install reloader stakater/reloader'
+                    
+                    // Deploy the latest release of Reloader
+                    sh 'kubectl apply -k https://github.com/stakater/Reloader/deployments/kubernetes'
+                }
+            }
+        }
+    }
+}
+
+def installHelm() {
+    // Run commands to install Helm
+    sh 'curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3'
+    sh 'chmod 700 get_helm.sh'
+    sh './get_helm.sh'
+}
