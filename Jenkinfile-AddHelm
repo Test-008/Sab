@@ -44,3 +44,37 @@ def installHelm() {
     sh 'chmod 700 get_helm.sh'
     sh './get_helm.sh'
 }
+
+
+
+New Update : 
+stage('Deploy to WDF/VAN DEV') {
+    when {
+        expression { return DEPLOY_ENV.equalsIgnoreCase('dev') }
+    }
+    steps {
+        script {
+            echo '==================Deploy to VAN DEV========================'
+            sh """
+                sed -i "s/${IMAGE_NAME}:latest/${IMAGE_FULL_NAME}/g" ${yamFile}
+                sed -i "s/${DEFAULT_DOMAIN}/${DEV_DOMAIN}/g" ${yamFile}
+                cat ${yamFile}
+                kubectl config use-context gardener-us
+                helm repo add stakater https://stakater.github.io/stakater-charts
+                helm repo update
+            """
+
+            // Check if the reloader Helm release exists in the cluster
+            def reloaderExists = sh(script: 'helm ls --all-namespaces | grep reloader', returnStatus: true)
+
+            // Install reloader only if it does not exist
+            if (reloaderExists != 0) {
+                sh 'helm install reloader stakater/reloader'
+            }
+
+            // Apply configurations using Reloader
+            sh 'kubectl apply -k https://github.com/stakater/Reloader/deployments/kubernetes'
+        }
+    }
+}
+
