@@ -12,10 +12,10 @@ RUN groupadd -g ${GID} jenkins && \
     echo "jenkins:jenkins" | chpasswd && adduser jenkins sudo
 
 # Set the working directory and copy the application source code
-WORKDIR /app
+WORKDIR /src
 COPY . .
 
-# Build the application (replace with your actual build command)
+# Build the application
 RUN ./gradlew build
 
 # Stage 2: Runtime Stage
